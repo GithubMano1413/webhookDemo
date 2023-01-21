@@ -1,0 +1,120 @@
+Apex Class:
+
+public class activitytaskclass
+{
+  @AuraEnabled(cacheable=true)
+    public static List<wrapperClass> getWrapperClassList(String accId)  
+    {
+        system.debug('accId >> ' + accId);
+        
+
+        List<wrapperClass> wrapperList = new List<wrapperClass>();
+        List<wrapperClass> afterSort = new List<wrapperClass>();
+        // List<Progress_Note__c> PNaftersort = new List<Progress_Note__c>();
+        // List<Task> Taskaftersort = new List<Task>();
+        // List<ContentDocumentLink> Cdaftersort = new List<ContentDocumentLink>();
+        
+        id caseid ='5003C000008fcVNQAY';
+         for(Progress_Note__c nts: [select Id, Name ,Notes__c, Patient_Interaction__c,CreatedById,LastModifiedById,LastModifiedBy.name,LastModifiedDate,case__c from Progress_Note__c where case__c= :caseid  ORDER BY LastModifiedDate DESC])
+        {
+            wrapperClass wc1 = new wrapperClass();
+            wc1.Id = nts.Id;
+            wc1.name = nts.Patient_Interaction__c; 
+            wc1.filterdate = nts.LastModifiedDate;
+            wc1.description = nts.Notes__c;
+           wc1.Username = nts.LastModifiedBy.name;
+            wc1.iconType = 'utility:note';
+            wrapperList.add(wc1);
+        }
+      
+        
+        
+        for(Task tsk: [select Id, WhatId,Description,Subject,CreatedById,LastModifiedBy.name,LastModifiedDate,ActivityDate from Task where WhatId= :caseid  ORDER BY LastModifiedDate DESC])
+        {
+            wrapperClass tk = new wrapperClass();
+            tk.Id = tsk.Id;
+            tk.name= tsk.Subject;
+            tk.filterdate = tsk.LastModifiedDate;
+            tk.description=tsk.description;
+            tk.Username = tsk.LastModifiedBy.name;
+            tk.iconType = 'utility:task';
+            wrapperList.add(tk);
+        }
+         for(ContentDocumentLink file: [SELECT Id, LinkedEntityId, ContentDocument.title ,ContentDocument.CreatedById,ContentDocument.CreatedDate,ContentDocument.LastModifiedBy.name,ContentDocument.LastModifiedDate,ContentDocument.Description, ContentDocumentId FROM ContentDocumentLink where LinkedEntityId = :caseid  ORDER BY ContentDocument.LastModifiedDate DESC])
+        {
+            wrapperClass fl = new wrapperClass();
+            fl.Id = file.Id;
+            fl.name= file.ContentDocument.title;
+            fl.filterdate = file.ContentDocument.LastModifiedDate;
+            fl.description=file.ContentDocument.Description;
+            fl.Username = file.ContentDocument.LastModifiedBy.name;
+            fl.iconType ='utility:open_folder';
+            
+            wrapperList.add(fl);
+
+        }
+             return  wrapperList;
+
+      
+        }
+
+
+    public class wrapperClass
+    {
+        @AuraEnabled public String iconType;    
+         @AuraEnabled public String name;
+         @AuraEnabled public String Username;
+      @AuraEnabled public DateTime  filterdate;
+        @AuraEnabled public String Id;
+       @AuraEnabled public String description;
+       @AuraEnabled public Id cdId;
+       @AuraEnabled public Id lkId;
+       @AuraEnabled public DateTime smst;
+  
+}
+}
+***************************************************************************************************************************************
+
+Js Part:
+
+
+import { LightningElement,wire,api,track } from 'lwc';
+import getWrapperClassList from '@salesforce/apex/activitytaskclass.getWrapperClassList';
+
+export default class Activitytask extends LightningElement {
+    @track actrecid=[];
+    @track filerecid=[];
+    @track noterecid=[];
+    @track taskrecid=[];
+    @track show=false;
+    @api recordId;
+
+    @wire(getWrapperClassList, {accId:'$recordId'})
+    WireAcceditRecords(result){
+        if(result){
+            console.log('this is checking purpose');
+            console.log( JSON.stringify(result.data));
+            console.log(result);
+            this.actrecid = result.data;
+            
+             console.log('value is'+ JSON.stringify(this.actrecid));
+
+            this.error = undefined;
+        }else{
+            this.error =result.error; 
+            this.actrecid =undefined;
+        }  
+     }
+    
+ activitymodelbox1()
+ {
+    this.show=true;
+ }  
+ activitymodelbox2()
+ {
+    this.show=false;
+
+ }   
+ 
+}
+*****************************************************************************************************************************
